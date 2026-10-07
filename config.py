@@ -14,6 +14,9 @@ GEMINI_TIMEOUT_SECONDS = 90
 OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "")
 OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET", "")
 OAUTH_TOKEN_PATH = os.environ.get("OAUTH_TOKEN_PATH", "secrets/token.json")
+# Contents of a token.json from a local login. Set this on servers (e.g. Railway), where
+# secrets/ isn't deployed and the browser login flow can't run.
+GOOGLE_TOKEN_JSON = os.environ.get("GOOGLE_TOKEN_JSON", "")
 
 GOOGLE_OAUTH_SCOPES = [
     "https://www.googleapis.com/auth/gmail.send",

@@ -1,3 +1,4 @@
+import json
 import os
 
 from google.auth.transport.requests import Request
@@ -11,10 +12,15 @@ def get_credentials() -> Credentials:
     creds = None
     if os.path.exists(config.OAUTH_TOKEN_PATH):
         creds = Credentials.from_authorized_user_file(config.OAUTH_TOKEN_PATH, config.GOOGLE_OAUTH_SCOPES)
+    elif config.GOOGLE_TOKEN_JSON:
+        creds = Credentials.from_authorized_user_info(json.loads(config.GOOGLE_TOKEN_JSON), config.GOOGLE_OAUTH_SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+        elif config.GOOGLE_TOKEN_JSON:
+            # On a server there's no browser to log in with, so fail loudly instead of hanging.
+            raise RuntimeError("GOOGLE_TOKEN_JSON is set but unusable — log in locally and copy a fresh token.json.")
         else:
             client_config = {
                 "installed": {

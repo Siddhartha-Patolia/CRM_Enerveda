@@ -57,7 +57,7 @@ def append_row(
     whatsapp_outreach: str = None,
     timestamp: str = None,
 ) -> bool:
-    timestamp = timestamp or datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = timestamp or datetime.datetime.now(config.LOCAL_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     try:
         service = _get_service()

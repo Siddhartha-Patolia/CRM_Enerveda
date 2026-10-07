@@ -1,3 +1,4 @@
+import datetime
 import os
 from dotenv import load_dotenv
 
@@ -8,6 +9,9 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 GEMINI_API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY", "")
 
 MODEL = "gemini-3.5-flash-lite"
+
+# Timestamps in the Sheet and token log are in IST, not the host's clock (Railway runs on UTC).
+LOCAL_TZ = datetime.timezone(datetime.timedelta(hours=5, minutes=30), "IST")
 
 GEMINI_TIMEOUT_SECONDS = 90
 

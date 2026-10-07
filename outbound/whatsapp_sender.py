@@ -13,10 +13,10 @@ _PHONE_ID = config.WHATSAPP_PHONE_NO_ID
 _MESSAGES_URL = f"https://graph.facebook.com/{config.WHATSAPP_API_VERSION}/{_PHONE_ID}/messages"
 _MEDIA_URL = f"https://graph.facebook.com/{config.WHATSAPP_API_VERSION}/{_PHONE_ID}/media"
 
-_TEMPLATE_NAME = "crm_enerveda"
+_TEMPLATE_NAME = "crm_enerveda_v1"
 _TEMPLATE_LANGUAGE = "en"
 
-# crm_enerveda is APPROVED (confirmed 2026-10-02) — real brochure sends are now live.
+# crm_enerveda_v1 (Enerveda LLP account, with the wa.me "chat with us" link) is APPROVED.
 USE_TEST_TEMPLATE = False
 
 
@@ -43,7 +43,9 @@ def _post_template_message(to: str, template_name: str, language_code: str, comp
 
     try:
         response = requests.post(_MESSAGES_URL, headers=_auth_headers(), json=payload, timeout=30)
-        response.raise_for_status()
+        if not response.ok:
+            logger.error("WhatsApp send failed (%s): %s", response.status_code, response.text)
+            return False
         return True
     except Exception:
         logger.exception("Failed to send WhatsApp template message")

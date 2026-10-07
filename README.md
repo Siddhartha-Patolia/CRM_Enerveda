@@ -43,6 +43,7 @@ google_auth.py      shared OAuth flow/token cache — one login covers both Gmai
 token_logger.py     appends Gemini token usage to token_logs.csv
 brochures/          the actual brochure PDFs — whatever's here is what users can pick
 secrets/            OAuth token cache (gitignored, created on first run)
+webhook/            minimal WhatsApp webhook (deployed separately, e.g. on Render)
 ```
 
 ## Setup
@@ -93,6 +94,13 @@ login/consent (covering both Gmail and Sheets at once), then caches the token at
 4. Submit a custom message template in WhatsApp Manager (Utility or Marketing category,
    Document header, named body variables) and wait for Meta's approval before real sends
    will work — see "Known limitations" below.
+5. Production setup requires a verified webhook. `webhook/app.py` is a minimal Flask app
+   that answers Meta's verification handshake and acknowledges (and discards) all events —
+   replies are handled manually in the WhatsApp Business app, not by this system. Deploy it
+   as a web service (e.g. Render: root directory `webhook`, build
+   `pip install -r requirements.txt`, start `gunicorn app:app`) with
+   `WHATSAPP_WEBHOOK_VERIFY_TOKEN` set, then enter `https://<host>/webhook` and the same
+   token as the callback URL / verify token in the App Dashboard.
 
 ### 6. Fill in `.env`
 
@@ -111,10 +119,9 @@ any point.
 ## Known limitations / in-progress
 
 - **WhatsApp template approval**: real brochure sends over WhatsApp require Meta to approve
-  a custom template first (can take up to ~24h). Until then, `outbound/whatsapp_sender.py`
-  has `USE_TEST_TEMPLATE = True`, which sends Meta's pre-approved `hello_world` demo message
-  instead of the real payload — enough to verify the pipeline end-to-end. Flip it to `False`
-  once your template shows `APPROVED` in WhatsApp Manager.
+  a custom template first (can take up to ~24h). `outbound/whatsapp_sender.py` has a
+  `USE_TEST_TEMPLATE` flag that, when `True`, sends Meta's pre-approved `hello_world` demo
+  message instead of the real payload. It is currently `False` (the template is approved).
 - **Attachment size limits**: Gmail's API caps the whole encoded message at ~35MB, so
   `email_sender.py` refuses to send (with a clear in-chat message) if selected brochures
   total over ~20MB. WhatsApp's document header has its own (smaller) limit — compress large

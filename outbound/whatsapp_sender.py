@@ -16,11 +16,8 @@ _MEDIA_URL = f"https://graph.facebook.com/{config.WHATSAPP_API_VERSION}/{_PHONE_
 _TEMPLATE_NAME = "crm_enerveda"
 _TEMPLATE_LANGUAGE = "en"
 
-# TEMPORARY: crm_enerveda is still pending Meta's approval. While True, send() uses the
-# pre-approved hello_world template instead of the real brochure payload, so the rest of
-# the pipeline (extraction -> sheet -> email -> WhatsApp) can be tested end-to-end today.
-# Flip to False once crm_enerveda is APPROVED.
-USE_TEST_TEMPLATE = True
+# crm_enerveda is APPROVED (confirmed 2026-10-02) — real brochure sends are now live.
+USE_TEST_TEMPLATE = False
 
 
 def _auth_headers() -> dict:

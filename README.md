@@ -116,6 +116,21 @@ python -m bot.main
 Message the bot `/start`, then send a business card photo. `/cancel` aborts mid-flow at
 any point.
 
+## Deploying (Railway)
+
+Two services from this repo in one Railway project:
+
+- **bot** — root directory blank, start command `python -m bot.main`, no public domain.
+  Variables: everything from `.env`, plus `GOOGLE_TOKEN_JSON` set to the full contents of
+  your local `secrets/token.json` (the browser login can't run on a server).
+- **webhook** — root directory `webhook`, start command
+  `gunicorn app:app --bind 0.0.0.0:$PORT`, generate a public domain. Variable:
+  `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
+
+Only run one copy of the bot at a time — two pollers on the same Telegram token conflict.
+If the Google OAuth consent screen is in "Testing" mode, its refresh token expires after
+7 days; publish the consent screen, or re-login locally and update `GOOGLE_TOKEN_JSON`.
+
 ## Known limitations / in-progress
 
 - **WhatsApp template approval**: real brochure sends over WhatsApp require Meta to approve

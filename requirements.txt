@@ -7,5 +7,4 @@ pydantic>=2.0
 google-api-python-client
 google-auth
 google-auth-httplib2
-google-auth-oauthlib
 requests

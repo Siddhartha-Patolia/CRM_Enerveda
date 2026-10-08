@@ -4,7 +4,7 @@ import logging
 from googleapiclient.discovery import build
 
 import config
-from google_auth import get_credentials
+from google_auth import get_sheets_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,8 @@ _HEADER = [
 
 
 def _get_service():
-    creds = get_credentials()
-    return build("sheets", "v4", credentials=creds)
+    creds = get_sheets_credentials()
+    return build("sheets", "v4", credentials=creds, cache_discovery=False)
 
 
 def _ensure_header(service) -> None:

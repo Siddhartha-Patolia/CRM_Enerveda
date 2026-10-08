@@ -179,7 +179,7 @@ async def handle_confirm_callback(update: Update, context: ContextTypes.DEFAULT_
         elif exceeds_size_limit(brochures):
             email_should_send = False
             email_line = (
-                "⚠️ Selected brochures are too large to email (Gmail's limit is ~20MB "
+                "⚠️ Selected brochures are too large to email (the limit is ~15MB "
                 "total) — try selecting fewer or smaller brochures."
             )
         else:

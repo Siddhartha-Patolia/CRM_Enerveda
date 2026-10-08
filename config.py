@@ -15,20 +15,27 @@ LOCAL_TZ = datetime.timezone(datetime.timedelta(hours=5, minutes=30), "IST")
 
 GEMINI_TIMEOUT_SECONDS = 90
 
-OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "")
-OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET", "")
-OAUTH_TOKEN_PATH = os.environ.get("OAUTH_TOKEN_PATH", "secrets/token.json")
-# Contents of a token.json from a local login. Set this on servers (e.g. Railway), where
-# secrets/ isn't deployed and the browser login flow can't run.
-GOOGLE_TOKEN_JSON = os.environ.get("GOOGLE_TOKEN_JSON", "")
-
-GOOGLE_OAUTH_SCOPES = [
-    "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/spreadsheets",
-]
+# Sheets logging uses the crm-sheets service account (no browser login, no expiring token),
+# shared as Editor on the sheet. Locally the key file in secrets/ is used; on servers
+# (Railway) set SHEETS_SERVICE_ACCOUNT_JSON to the key file's contents.
+SHEETS_SERVICE_ACCOUNT_JSON = os.environ.get("SHEETS_SERVICE_ACCOUNT_JSON", "")
+SHEETS_SERVICE_ACCOUNT_FILE = os.environ.get("SHEETS_SERVICE_ACCOUNT_FILE", "secrets/sheets_service_account.json")
 
 GOOGLE_SHEETS_ID = os.environ.get("GOOGLE_SHEETS_ID", "")
+# Outreach email is sent over Gmail SMTP from this Workspace mailbox, using an app password
+# (needs 2-Step Verification on the account). Replies land in its inbox unless
+# REPLY_TO_EMAIL is set. EMAIL_CC / EMAIL_BCC are optional comma-separated lists.
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
+# The account that logs in to SMTP; defaults to SENDER_EMAIL. Only differs when sending
+# from a "Send mail as" alias of another user.
+SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "") or SENDER_EMAIL
+SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "").replace(" ", "")
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
+SENDER_NAME = os.environ.get("SENDER_NAME", "Enerveda Vault LLP")
+REPLY_TO_EMAIL = os.environ.get("REPLY_TO_EMAIL", "")
+EMAIL_CC = [e.strip() for e in os.environ.get("EMAIL_CC", "").split(",") if e.strip()]
+EMAIL_BCC = [e.strip() for e in os.environ.get("EMAIL_BCC", "").split(",") if e.strip()]
 
 WHATSAPP_PHONE_NO_ID = os.environ.get("WHATSAPP_PHONE_NO_ID", "")
 WHATSAPP_BUSINESS_ACCOUNT_ID = os.environ.get("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
@@ -69,8 +76,8 @@ if not TELEGRAM_BOT_TOKEN:
 if not GEMINI_API_KEY:
     raise RuntimeError("Gemini API key missing.")
 
-if not OAUTH_CLIENT_ID or not OAUTH_CLIENT_SECRET:
-    raise RuntimeError("OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET missing.")
+if not SENDER_EMAIL or not SMTP_APP_PASSWORD:
+    raise RuntimeError("SENDER_EMAIL / SMTP_APP_PASSWORD missing.")
 
 if not GOOGLE_SHEETS_ID:
     raise RuntimeError("GOOGLE_SHEETS_ID missing.")

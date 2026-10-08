@@ -35,14 +35,14 @@ brochure_catalog.py scans brochures/*.pdf — the filename (minus extension) is 
 extraction/
   gemini_client.py  sends the card image to Gemini, returns (contact, token usage)
 outbound/
-  email_sender.py   Gmail API send (intro text + brochure attachments)
+  email_sender.py   Gmail SMTP send as SENDER_EMAIL (intro text + brochure attachments)
   whatsapp_sender.py WhatsApp Cloud API send (template message + document media)
 sheets/
   sheet_logger.py   appends one row per successful outreach to the Google Sheet
-google_auth.py      shared OAuth flow/token cache — one login covers both Gmail + Sheets
+google_auth.py      Google service-account credentials for Sheets
 token_logger.py     appends Gemini token usage to token_logs.csv
 brochures/          the actual brochure PDFs — whatever's here is what users can pick
-secrets/            OAuth token cache (gitignored, created on first run)
+secrets/            local service-account key file (gitignored)
 webhook/            minimal WhatsApp webhook (deployed separately, e.g. on Render)
 ```
 
@@ -66,20 +66,25 @@ Copy the token into `.env` as `TELEGRAM_BOT_TOKEN`.
 Get one from [Google AI Studio](https://aistudio.google.com/). Put it in `.env` as
 `GOOGLE_GEMINI_API_KEY`.
 
-### 4. Google Cloud — one OAuth client covers Gmail + Sheets
+### 4. Google Sheets (service account)
 
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com), enable the
-   **Gmail API** and **Google Sheets API**.
-2. OAuth consent screen: add scopes `gmail.send` and `spreadsheets`; while the app is in
-   "Testing" mode, add your own Google account as a test user.
-3. Credentials -> Create Credentials -> OAuth client ID -> **Desktop app**. Put the client ID
-   and secret into `.env` as `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET`.
-4. Create a blank Google Sheet, copy its ID from the URL into `.env` as `GOOGLE_SHEETS_ID`.
-5. Set `SENDER_EMAIL` in `.env` to the Gmail address you'll authorize in step 6 below.
+1. In [Google Cloud Console](https://console.cloud.google.com), enable the **Google Sheets
+   API**, then IAM & Admin -> Service Accounts -> create `crm-sheets` (no roles) -> Keys ->
+   Add key -> JSON. Save it as `secrets/sheets_service_account.json`.
+2. Share the sheet with the key's `client_email` as **Editor** and put the sheet's ID (from
+   its URL) into `GOOGLE_SHEETS_ID`.
 
-The first time the bot sends an email or logs a row, it opens a browser for a one-time
-login/consent (covering both Gmail and Sheets at once), then caches the token at
-`secrets/token.json` — no repeated prompts after that.
+No browser login and no expiring token.
+
+### 4b. Email (Gmail SMTP with an app password)
+
+1. On the Workspace account the email is sent from, turn on 2-Step Verification, then
+   create an app password at myaccount.google.com/apppasswords.
+2. Set `SENDER_EMAIL` to that address and `SMTP_APP_PASSWORD` to the app password.
+   Optional: `SENDER_NAME`, `REPLY_TO_EMAIL`, `EMAIL_CC`, `EMAIL_BCC`.
+
+Sent mail appears in the account's Sent folder and replies go to its inbox (or
+`REPLY_TO_EMAIL`). The app password stops working if the account's Google password changes.
 
 ### 5. WhatsApp (Meta Cloud API)
 
@@ -121,15 +126,13 @@ any point.
 Two services from this repo in one Railway project:
 
 - **bot** — root directory blank, start command `python -m bot.main`, no public domain.
-  Variables: everything from `.env`, plus `GOOGLE_TOKEN_JSON` set to the full contents of
-  your local `secrets/token.json` (the browser login can't run on a server).
+  Variables: everything from `.env`, with `SHEETS_SERVICE_ACCOUNT_JSON` set to the full
+  contents of the Sheets key file (`secrets/` isn't deployed).
 - **webhook** — root directory `webhook`, start command
   `gunicorn app:app --bind 0.0.0.0:$PORT`, generate a public domain. Variable:
   `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.
 
 Only run one copy of the bot at a time — two pollers on the same Telegram token conflict.
-If the Google OAuth consent screen is in "Testing" mode, its refresh token expires after
-7 days; publish the consent screen, or re-login locally and update `GOOGLE_TOKEN_JSON`.
 
 ## Known limitations / in-progress
 
@@ -137,9 +140,10 @@ If the Google OAuth consent screen is in "Testing" mode, its refresh token expir
   a custom template first (can take up to ~24h). `outbound/whatsapp_sender.py` has a
   `USE_TEST_TEMPLATE` flag that, when `True`, sends Meta's pre-approved `hello_world` demo
   message instead of the real payload. It is currently `False` (the template is approved).
-- **Attachment size limits**: Gmail's API caps the whole encoded message at ~35MB, so
-  `email_sender.py` refuses to send (with a clear in-chat message) if selected brochures
-  total over ~20MB. WhatsApp's document header has its own (smaller) limit — compress large
+- **Attachment size limits**: Workspace caps a message at 25MB, so `email_sender.py`
+  refuses to send (with a clear in-chat message) if selected brochures total over ~15MB.
+- **Email volume**: Workspace allows ~2,000 messages/day per sender (500/day while the
+  Workspace subscription is still in its trial phase). WhatsApp's document header has its own (smaller) limit — compress large
   brochures if sends fail.
 - **Gemini model note**: `gemini-3.5-flash-lite` uses fixed sampling and ignores the
   `temperature=0` setting in `extraction/gemini_client.py` (a benign warning, not an error).

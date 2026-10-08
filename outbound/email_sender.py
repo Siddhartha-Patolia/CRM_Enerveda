@@ -1,54 +1,47 @@
-import base64
 import logging
 import mimetypes
 import os
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email import encoders
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr
 from typing import List
-
-from googleapiclient.discovery import build
 
 import config
 from brochure_catalog import Brochure
-from google_auth import get_credentials
 
 logger = logging.getLogger(__name__)
 
-# Gmail API caps the whole base64-encoded message at ~35MB (36,700,160 bytes). Base64
-# inflates raw bytes by ~33%, so cap the raw attachment total well under that threshold
-# rather than let an oversized send stall/fail slowly over the network.
-_MAX_TOTAL_ATTACHMENT_BYTES = 20 * 1024 * 1024
+# Workspace caps a message at 25MB, and base64 inflates raw bytes by ~33%, so cap the raw
+# attachment total well under that rather than let an oversized send fail slowly.
+_MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024
+
+_SUBJECT = "Great connecting with you"
 
 
-def _get_service():
-    creds = get_credentials()
-    return build("gmail", "v1", credentials=creds)
-
-
-def _build_message(contact: dict, brochures: List[Brochure], sender_name: str) -> MIMEMultipart:
+def _build_message(contact: dict, brochures: List[Brochure], sender_name: str) -> EmailMessage:
     body = config.INTRO_MESSAGE_TEMPLATE.format(
         representative_name=contact.get("name") or "there",
         sender_name=sender_name or "",
     )
 
-    message = MIMEMultipart()
-    message["to"] = contact["email"]
-    message["from"] = config.SENDER_EMAIL
-    message["subject"] = "Great connecting with you"
-    message.attach(MIMEText(body))
+    message = EmailMessage()
+    message["To"] = contact["email"]
+    message["From"] = formataddr((config.SENDER_NAME, config.SENDER_EMAIL))
+    message["Subject"] = _SUBJECT
+    if config.EMAIL_CC:
+        message["Cc"] = ", ".join(config.EMAIL_CC)
+    # send_message() delivers to Bcc recipients and strips the header before sending.
+    if config.EMAIL_BCC:
+        message["Bcc"] = ", ".join(config.EMAIL_BCC)
+    if config.REPLY_TO_EMAIL:
+        message["Reply-To"] = config.REPLY_TO_EMAIL
+    message.set_content(body)
 
     for brochure in brochures:
         content_type, _ = mimetypes.guess_type(brochure.path)
+        maintype, subtype = (content_type or "application/octet-stream").split("/", 1)
         with open(brochure.path, "rb") as f:
-            part = MIMEBase(*(content_type or "application/octet-stream").split("/", 1))
-            part.set_payload(f.read())
-        encoders.encode_base64(part)
-        part.add_header(
-            "Content-Disposition", "attachment", filename=f"{brochure.label}.pdf"
-        )
-        message.attach(part)
+            message.add_attachment(f.read(), maintype=maintype, subtype=subtype, filename=f"{brochure.label}.pdf")
 
     return message
 
@@ -63,11 +56,11 @@ def send(contact: dict, brochures: List[Brochure], sender_name: str = None) -> b
         return False
 
     try:
-        service = _get_service()
         message = _build_message(contact, brochures, sender_name)
-        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-        service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=60) as smtp:
+            smtp.login(config.SMTP_USERNAME, config.SMTP_APP_PASSWORD)
+            smtp.send_message(message)
         return True
     except Exception:
-        logger.exception("Failed to send email via Gmail API")
+        logger.exception("Failed to send email via SMTP")
         return False

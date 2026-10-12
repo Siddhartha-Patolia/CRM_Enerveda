@@ -22,16 +22,13 @@ SHEETS_SERVICE_ACCOUNT_JSON = os.environ.get("SHEETS_SERVICE_ACCOUNT_JSON", "")
 SHEETS_SERVICE_ACCOUNT_FILE = os.environ.get("SHEETS_SERVICE_ACCOUNT_FILE", "secrets/sheets_service_account.json")
 
 GOOGLE_SHEETS_ID = os.environ.get("GOOGLE_SHEETS_ID", "")
-# Outreach email is sent over Gmail SMTP from this Workspace mailbox, using an app password
-# (needs 2-Step Verification on the account). Replies land in its inbox unless
-# REPLY_TO_EMAIL is set. EMAIL_CC / EMAIL_BCC are optional comma-separated lists.
+# Outreach email is sent through the Gmail API (HTTPS — Railway blocks outbound SMTP) as
+# this Workspace mailbox, using an OAuth token created once with scripts/gmail_login.py.
+# Replies land in its inbox unless REPLY_TO_EMAIL is set. EMAIL_CC / EMAIL_BCC are optional
+# comma-separated lists. On servers set GMAIL_TOKEN_JSON to the token file's contents.
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
-# The account that logs in to SMTP; defaults to SENDER_EMAIL. Only differs when sending
-# from a "Send mail as" alias of another user.
-SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "") or SENDER_EMAIL
-SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "").replace(" ", "")
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465
+GMAIL_TOKEN_JSON = os.environ.get("GMAIL_TOKEN_JSON", "")
+GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "secrets/gmail_token.json")
 SENDER_NAME = os.environ.get("SENDER_NAME", "Enerveda Vault LLP")
 REPLY_TO_EMAIL = os.environ.get("REPLY_TO_EMAIL", "")
 EMAIL_CC = [e.strip() for e in os.environ.get("EMAIL_CC", "").split(",") if e.strip()]
@@ -76,8 +73,8 @@ if not TELEGRAM_BOT_TOKEN:
 if not GEMINI_API_KEY:
     raise RuntimeError("Gemini API key missing.")
 
-if not SENDER_EMAIL or not SMTP_APP_PASSWORD:
-    raise RuntimeError("SENDER_EMAIL / SMTP_APP_PASSWORD missing.")
+if not SENDER_EMAIL:
+    raise RuntimeError("SENDER_EMAIL missing.")
 
 if not GOOGLE_SHEETS_ID:
     raise RuntimeError("GOOGLE_SHEETS_ID missing.")

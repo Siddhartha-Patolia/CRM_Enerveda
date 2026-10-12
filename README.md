@@ -35,14 +35,16 @@ brochure_catalog.py scans brochures/*.pdf — the filename (minus extension) is 
 extraction/
   gemini_client.py  sends the card image to Gemini, returns (contact, token usage)
 outbound/
-  email_sender.py   Gmail SMTP send as SENDER_EMAIL (intro text + brochure attachments)
+  email_sender.py   Gmail API send as SENDER_EMAIL (intro text + brochure attachments)
   whatsapp_sender.py WhatsApp Cloud API send (template message + document media)
 sheets/
   sheet_logger.py   appends one row per successful outreach to the Google Sheet
-google_auth.py      Google service-account credentials for Sheets
+google_auth.py      Google credentials: service account (Sheets), OAuth token (Gmail)
+scripts/
+  gmail_login.py    one-time Gmail sign-in for the sender (supports remote approval)
 token_logger.py     appends Gemini token usage to token_logs.csv
 brochures/          the actual brochure PDFs — whatever's here is what users can pick
-secrets/            local service-account key file (gitignored)
+secrets/            local keys/tokens (gitignored)
 webhook/            minimal WhatsApp webhook (deployed separately, e.g. on Render)
 ```
 
@@ -76,15 +78,24 @@ Get one from [Google AI Studio](https://aistudio.google.com/). Put it in `.env` 
 
 No browser login and no expiring token.
 
-### 4b. Email (Gmail SMTP with an app password)
+### 4b. Email (Gmail API as the sender's Workspace mailbox)
 
-1. On the Workspace account the email is sent from, turn on 2-Step Verification, then
-   create an app password at myaccount.google.com/apppasswords.
-2. Set `SENDER_EMAIL` to that address and `SMTP_APP_PASSWORD` to the app password.
-   Optional: `SENDER_NAME`, `REPLY_TO_EMAIL`, `EMAIL_CC`, `EMAIL_BCC`.
+Railway blocks outbound SMTP on its Hobby plan, so mail goes through the Gmail API over HTTPS.
 
-Sent mail appears in the account's Sent folder and replies go to its inbox (or
-`REPLY_TO_EMAIL`). The app password stops working if the account's Google password changes.
+1. In the same Cloud project: enable the **Gmail API**; on the OAuth consent screen use
+   audience **External**, add the scope `gmail.send`, and **Publish** the app ("In
+   production" — in "Testing", tokens expire after 7 days). Verification isn't needed.
+2. Create (or reuse) an OAuth client of type **Desktop app**, download its JSON to
+   `secrets/oauth_client.json`.
+3. Set `SENDER_EMAIL`, then run `./env/bin/python -m scripts.gmail_login`. Send the printed
+   link to the sender; they sign in, allow access, and send back the address of the page
+   that fails to load; paste it in. (Use `--local` to sign in on this machine instead.)
+4. The token is saved to `secrets/gmail_token.json`. Optional: `SENDER_NAME`,
+   `REPLY_TO_EMAIL`, `EMAIL_CC`, `EMAIL_BCC`.
+
+Sent mail appears in the sender's Sent folder and replies go to their inbox (or
+`REPLY_TO_EMAIL`). Redo step 3 if the sender changes their Google password or revokes
+access.
 
 ### 5. WhatsApp (Meta Cloud API)
 
@@ -126,8 +137,9 @@ any point.
 Two services from this repo in one Railway project:
 
 - **bot** — root directory blank, start command `python -m bot.main`, no public domain.
-  Variables: everything from `.env`, with `SHEETS_SERVICE_ACCOUNT_JSON` set to the full
-  contents of the Sheets key file (`secrets/` isn't deployed).
+  Variables: everything from `.env`, plus `SHEETS_SERVICE_ACCOUNT_JSON` and
+  `GMAIL_TOKEN_JSON` set to the full contents of `secrets/sheets_service_account.json` and
+  `secrets/gmail_token.json` (`secrets/` isn't deployed).
 - **webhook** — root directory `webhook`, start command
   `gunicorn app:app --bind 0.0.0.0:$PORT`, generate a public domain. Variable:
   `WHATSAPP_WEBHOOK_VERIFY_TOKEN`.

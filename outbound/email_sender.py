@@ -1,13 +1,16 @@
+import base64
 import logging
 import mimetypes
 import os
-import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
 from typing import List
 
+from googleapiclient.discovery import build
+
 import config
 from brochure_catalog import Brochure
+from google_auth import get_gmail_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ def _build_message(contact: dict, brochures: List[Brochure], sender_name: str) -
     message["Subject"] = _SUBJECT
     if config.EMAIL_CC:
         message["Cc"] = ", ".join(config.EMAIL_CC)
-    # send_message() delivers to Bcc recipients and strips the header before sending.
+    # Gmail delivers to Bcc recipients and strips the header before it reaches anyone.
     if config.EMAIL_BCC:
         message["Bcc"] = ", ".join(config.EMAIL_BCC)
     if config.REPLY_TO_EMAIL:
@@ -56,11 +59,10 @@ def send(contact: dict, brochures: List[Brochure], sender_name: str = None) -> b
         return False
 
     try:
-        message = _build_message(contact, brochures, sender_name)
-        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=60) as smtp:
-            smtp.login(config.SMTP_USERNAME, config.SMTP_APP_PASSWORD)
-            smtp.send_message(message)
+        service = build("gmail", "v1", credentials=get_gmail_credentials(), cache_discovery=False)
+        raw = base64.urlsafe_b64encode(_build_message(contact, brochures, sender_name).as_bytes()).decode()
+        service.users().messages().send(userId="me", body={"raw": raw}).execute()
         return True
     except Exception:
-        logger.exception("Failed to send email via SMTP")
+        logger.exception("Failed to send email via Gmail API")
         return False

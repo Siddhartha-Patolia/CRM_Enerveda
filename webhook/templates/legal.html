@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} — Enerveda Vault LLP</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.6; color: #222; }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.15rem; margin-top: 1.8em; }
+  .muted { color: #666; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<h1>{{ title }}</h1>
+<p class="muted">Enerveda Vault LLP · Last updated {{ updated }}</p>
+{% if page == "privacy" %}
+<p>This policy covers the internal outreach tool Enerveda Vault LLP uses to follow up with business contacts we meet, for example at trade exhibitions.</p>
+
+<h2>What we collect</h2>
+<p>When you share your business card with us, we record the details printed on it: your name, company, phone number and email address.</p>
+
+<h2>How we use it</h2>
+<ul>
+  <li>To send you the product brochure you requested, by email and by WhatsApp.</li>
+  <li>To keep an internal record of who we sent brochures to, in a Google Sheet accessible only to our team.</li>
+</ul>
+<p>Business card images are processed by Google's Gemini service to read the details, and are not stored by the tool.</p>
+
+<h2>Google account access</h2>
+<p>The tool uses Google's Gmail API only to send outreach emails from our own company mailbox. It does not read, store, or delete any email, and data obtained through Google APIs is not used for any other purpose. Its use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+<h2>Sharing</h2>
+<p>We do not sell or share your details with third parties. They are processed only by the services needed to send our messages: Google (Gmail, Sheets, Gemini) and Meta (WhatsApp).</p>
+
+<h2>Your choices</h2>
+<p>To stop receiving messages or to have your details removed, reply to our email or WhatsApp message, or write to <a href="mailto:{{ contact }}">{{ contact }}</a>.</p>
+{% else %}
+<p>These terms cover the internal outreach tool Enerveda Vault LLP uses to send product brochures to business contacts.</p>
+
+<h2>Use</h2>
+<p>The tool is operated by Enerveda Vault LLP for its own business communication and is not offered to the public.</p>
+
+<h2>Messages</h2>
+<p>Brochures and messages are sent to contacts who shared their details with us. Information in them is provided for reference and may change without notice.</p>
+
+<h2>Contact</h2>
+<p>Questions about these terms: <a href="mailto:{{ contact }}">{{ contact }}</a>. See also our <a href="/privacy">privacy policy</a>.</p>
+{% endif %}
+</body>
+</html>

@@ -10,7 +10,7 @@ Meta doesn't allow wa.me links in template buttons, so the outreach template's
 import logging
 import os
 
-from flask import Flask, redirect, request
+from flask import Flask, redirect, render_template, request
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -18,6 +18,9 @@ logger = logging.getLogger("webhook")
 
 VERIFY_TOKEN = os.environ.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "")
 CHAT_REDIRECT_URL = os.environ.get("CHAT_REDIRECT_URL", "https://wa.me/919510669707")
+# Public privacy policy / terms pages, linked from the Google OAuth consent screen.
+LEGAL_CONTACT_EMAIL = os.environ.get("LEGAL_CONTACT_EMAIL", "krishnateja@enervedavault.com")
+_LEGAL_UPDATED = "12 October 2026"
 
 
 @app.get("/webhook")
@@ -55,6 +58,20 @@ def receive():
 def chat():
     # 302, not 301, so browsers don't cache it and the target can be changed later.
     return redirect(CHAT_REDIRECT_URL, code=302)
+
+
+@app.get("/privacy")
+def privacy():
+    return render_template(
+        "legal.html", page="privacy", title="Privacy Policy", updated=_LEGAL_UPDATED, contact=LEGAL_CONTACT_EMAIL
+    )
+
+
+@app.get("/terms")
+def terms():
+    return render_template(
+        "legal.html", page="terms", title="Terms of Service", updated=_LEGAL_UPDATED, contact=LEGAL_CONTACT_EMAIL
+    )
 
 
 @app.get("/")

@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Comma-separated Telegram user IDs allowed to use the bot (staff). Empty = anyone.
+ALLOWED_TELEGRAM_USER_IDS = {
+    int(i) for i in os.environ.get("ALLOWED_TELEGRAM_USER_IDS", "").replace(" ", "").split(",") if i
+}
 
 GEMINI_API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY", "")
 

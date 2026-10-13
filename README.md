@@ -29,6 +29,7 @@ bot/
   main.py           entrypoint — builds the Telegram Application, registers handlers
   conversation.py   the whole conversation state machine (photo -> review -> confirm)
   keyboards.py      inline keyboard builders (brochure checklist, review screen)
+  per_user_processor.py  runs different users' updates in parallel, each user's in order
 config.py           loads .env, holds the Gemini prompt and the email/WhatsApp intro copy
 brochure_catalog.py scans brochures/*.pdf — the filename (minus extension) is both the
                     internal key and the display label
@@ -159,5 +160,9 @@ Only run one copy of the bot at a time — two pollers on the same Telegram toke
   brochures if sends fail.
 - **Gemini model note**: `gemini-3.5-flash-lite` uses fixed sampling and ignores the
   `temperature=0` setting in `extraction/gemini_client.py` (a benign warning, not an error).
+- **Multiple staff**: each Telegram user has their own conversation and their own update
+  queue, so several people can scan cards at once (up to 8 updates in progress at a time)
+  without waiting on each other. Set `ALLOWED_TELEGRAM_USER_IDS` to restrict the bot to
+  staff; anyone else gets a "private bot" reply showing their ID.
 - No database — conversation state lives in Telegram's per-chat `context.user_data` and is
   lost if the bot restarts mid-conversation (fine for this single-operator use case).

@@ -68,7 +68,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     image_bytes = bytes(await file.download_as_bytearray())
 
     try:
-        contact, token_usage = extract(image_bytes)
+        # Off the event loop, so one user's Gemini call doesn't stall everyone else.
+        contact, token_usage = await asyncio.to_thread(extract, image_bytes)
     except ExtractionTimeoutError:
         logger.exception("Gemini extraction timed out")
         await update.message.reply_text(
@@ -204,7 +205,8 @@ async def handle_confirm_callback(update: Update, context: ContextTypes.DEFAULT_
 
         sheet_ok = None
         if email_sent or whatsapp_sent:
-            sheet_ok = append_row(
+            sheet_ok = await asyncio.to_thread(
+                append_row,
                 contact.get("company"),
                 contact.get("name"),
                 contact.get("phone"),

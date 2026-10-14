@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # attachment total well under that rather than let an oversized send fail slowly.
 _MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024
 
-_SUBJECT = "Great connecting with you"
+_SUBJECT = "Let's build BESS projects for India! 🇮🇳"
 
 
 def _build_message(contact: dict, brochures: List[Brochure], sender_name: str) -> EmailMessage:
